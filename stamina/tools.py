@@ -5,10 +5,12 @@ session so the final plan is rebuilt from flyai data, never from model text.
 compute_stamina and finalize run the deterministic estimates in stamina.py.
 """
 import datetime as dt
+from concurrent.futures import ThreadPoolExecutor
 
 from . import flyai
 from .planner import items_from, usable_coordinates, price_value
-from .stamina import bill_day, poi_steps, stair_risk, CATEGORY_STEPS, DAILY_TAXI_KM_BUDGET
+from .stamina import (bill_day, bill_park_day, distance_m, park_item_kind, park_item_risk, poi_steps, stair_risk,
+                      CATEGORY_STEPS, DAILY_TAXI_KM_BUDGET, DETOUR_FACTOR, PARK_ITEM_STEPS, PARK_RADIUS_M)
 
 DAYS_SCHEMA = {"type": "array", "description": "每天一个景点 id 列表，按游览顺序；天数必须等于行程天数",
                "items": {"type": "array", "items": {"type": "string"}}}
@@ -22,11 +24,21 @@ SPECS = [
             "category": {"type": "string", "enum": list(CATEGORY_STEPS)},
         }}}},
     {"type": "function", "function": {
+        "name": "search_park_items",
+        "description": "主题乐园（如迪士尼）园内规划：给出乐园名和你知道的园内项目、园区、演出名称，逐个用飞猪实时数据核实，"
+                       "只返回坐标在乐园范围内的项目。某天只排这些项目时，按园内步行计算步数。",
+        "parameters": {"type": "object", "properties": {
+            "park_name": {"type": "string"},
+            "item_names": {"type": "array", "items": {"type": "string"}, "description": "8–15 个园内项目名"},
+        }, "required": ["park_name", "item_names"]}}},
+    {"type": "function", "function": {
         "name": "search_hotel",
-        "description": "用飞猪实时数据搜索某个景点附近的酒店，入住退房日期与每晚预算自动按画像填写。",
+        "description": "用飞猪实时数据搜索酒店，入住退房日期与每晚预算自动按画像填写。poi_name 找某景点附近，"
+                       "key_words 按酒店名找（如「上海迪士尼乐园酒店」）；二选一。",
         "parameters": {"type": "object", "properties": {
             "poi_name": {"type": "string", "description": "以哪个景点为中心找酒店"},
-        }, "required": ["poi_name"]}}},
+            "key_words": {"type": "string", "description": "酒店名关键词"},
+        }}}},
     {"type": "function", "function": {
         "name": "compute_stamina",
         "description": "按体力预算确定性计算每天步数、是否超上限、打车里程和逐段账单。步数只能以此为准。",
@@ -56,6 +68,7 @@ class Session:
         self.pois, self.hotels = {}, {}  # id -> full flyai item
         self.raw_results = []
         self.hotel_queries = {}  # hotel id -> the search that returned it
+        self.park_of = {}  # in-park item id -> park POI id
         self.final = None
 
     def call(self, name, args):
@@ -63,6 +76,8 @@ class Session:
             return self.search_poi(**args)
         if name == 'search_hotel':
             return self.search_hotel(**args)
+        if name == 'search_park_items':
+            return self.search_park_items(**args)
         if name == 'compute_stamina':
             return self.compute(**args)
         if name == 'finalize':
@@ -84,14 +99,57 @@ class Session:
             items.append(self.pois[key])
         return {'items': [poi_view(p) for p in items[:10]]}
 
-    def search_hotel(self, poi_name):
+    def register(self, item):
+        key = str(item.get('id') or item['name'])
+        self.pois.setdefault(key, dict(item, id=key, source_order=len(self.pois)))
+        return self.pois[key]
+
+    def search_park_items(self, park_name, item_names):
+        if not isinstance(item_names, list) or not item_names:
+            raise ToolError('item_names 必须是非空的项目名列表')
+        city = self.profile['city']
+        first = self.search_poi_fn(city, keyword=park_name)
+        self.raw_results.append(first)
+        found_items = [i for i in found(first) if i.get('name') and usable_coordinates(i)]
+        parks = [i for i in found_items if i.get('category') == '主题乐园'] or found_items
+        if not parks:
+            raise ToolError(f'飞猪没有找到乐园「{park_name}」')
+        park = self.register(parks[0])
+        with ThreadPoolExecutor(max_workers=4) as pool:
+            results = list(pool.map(lambda n: self.search_poi_fn(city, keyword=str(n)), item_names[:15]))
+        self.raw_results.extend(results)
+        items, seen = [], {park['id']}
+        for result in [first] + results:
+            if result.get('status') != 0:
+                continue
+            for item in items_from(result):
+                if not item.get('name') or not usable_coordinates(item):
+                    continue
+                # 直线距离（去掉绕行系数）判定是否在乐园范围内
+                if distance_m(park, item) / DETOUR_FACTOR > PARK_RADIUS_M:
+                    continue
+                record = self.register(item)
+                if record['id'] in seen:
+                    continue
+                seen.add(record['id'])
+                self.park_of[record['id']] = park['id']
+                items.append(record)
+        return {'park': dict(id=park['id'], name=park['name']),
+                'items': [park_item_view(i, self.profile['travelers']) for i in items]}
+
+    def search_hotel(self, poi_name=None, key_words=None):
+        if not poi_name and not key_words:
+            raise ToolError('poi_name 和 key_words 至少给一个')
         dates = self.profile['dates']
         checkout = dates[-1] if len(dates) > 1 else (dt.date.fromisoformat(dates[0]) + dt.timedelta(days=1)).isoformat()
-        result = self.search_hotel_fn(self.profile['city'], poi_name=poi_name, check_in_date=dates[0],
-                                      check_out_date=checkout, max_price=self.profile['budget_per_night'],
-                                      sort='distance_asc')
+        search = dict(check_in_date=dates[0], check_out_date=checkout, max_price=self.profile['budget_per_night'])
+        if key_words:
+            search['key_words'] = key_words
+        if poi_name:
+            search.update(poi_name=poi_name, sort='distance_asc')
+        result = self.search_hotel_fn(self.profile['city'], **search)
         self.raw_results.append(result)
-        query = dict(poi_name=poi_name, check_in=dates[0], check_out=checkout)
+        query = dict(poi_name=poi_name or key_words, check_in=dates[0], check_out=checkout)
         items = []
         budget = self.profile['budget_per_night']
         for item in found(result):
@@ -103,7 +161,7 @@ class Session:
             self.hotels[key] = dict(item, id=key)
             self.hotel_queries[key] = query
             items.append(self.hotels[key])
-        return {'items': [dict(id=h['id'], name=h['name'], price=h.get('price'),
+        return {'items': [dict(id=h['id'], name=h['name'], price=h.get('price'), star=h.get('star'),
                                latitude=h['latitude'], longitude=h['longitude']) for h in items[:8]]}
 
     def resolve(self, days, hotel_id=None):
@@ -131,7 +189,16 @@ class Session:
         return routes, hotel
 
     def bill(self, routes, hotel):
-        return [bill_day(date, route, self.profile, hotel) for date, route in zip(self.profile['dates'], routes)]
+        days = []
+        for date, route in zip(self.profile['dates'], routes):
+            parks = {self.park_of.get(p['id']) for p in route}
+            if route and parks != {None}:
+                if len(parks) > 1:
+                    raise ToolError(f'{date} 同一天不能混排园内项目和园外景点（或两个乐园）')
+                days.append(bill_park_day(date, self.pois[parks.pop()], route, self.profile, hotel))
+            else:
+                days.append(bill_day(date, route, self.profile, hotel))
+        return days
 
     def review(self, billed, routes):
         """Validation problems of one billed plan; shared by compute and finalize."""
@@ -184,6 +251,14 @@ def poi_view(poi):
                 ticket=ticket.get('price') or ('免费' if poi.get('freePoiStatus') == 'FREE' else None),
                 est_steps_inside=poi_steps(poi), stair_risk=stair_risk(poi) or None,
                 description=(poi.get('description') or '')[:60])
+
+
+def park_item_view(item, travelers):
+    kind = park_item_kind(item)
+    return dict(id=item['id'], name=item['name'], kind=kind, seated=kind == 'show',
+                est_steps_inside=PARK_ITEM_STEPS[kind], risk=park_item_risk(item, travelers) or None,
+                latitude=item['latitude'], longitude=item['longitude'],
+                description=(item.get('description') or '')[:60])
 
 
 def day_view(day):

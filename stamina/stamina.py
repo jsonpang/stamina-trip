@@ -10,7 +10,7 @@ DEFAULT_POI_STEPS = 2500
 DETOUR_FACTOR = 1.3
 TAXI_STEPS = 200  # 估算上下车与接驳步行；不代表出租车门到门。
 # 名称含这些词的景点按坐船处理：游览主要在水上，步行远少于分类估算。
-BOAT_WORDS = ('夜游', '游船', '游艇', '画舫', '观光船')
+BOAT_WORDS = ('夜游', '游船', '游轮', '游艇', '画舫', '观光船')
 BOAT_STEPS = 300
 # 体力版把长距离打车计成成本：同一天打车总里程超过该值要扣分/避免。
 DAILY_TAXI_KM_BUDGET = 20.0
@@ -126,6 +126,11 @@ def bill_day(date, route, profile, hotel=None, ordinary=False):
     # 午休已回到酒店且之后没有景点时，不再加一段酒店到酒店。
     if hotel and route and previous is not hotel:
         rows.append(transfer(previous, hotel, profile['travelers'], threshold, ordinary, limited))
+    return _close_day(date, route, rows, profile, ordinary)
+
+
+def _close_day(date, route, rows, profile, ordinary):
+    cap = profile['daily_step_cap']
     total = 0
     for row in rows:
         total += row['steps']
@@ -139,3 +144,67 @@ def bill_day(date, route, profile, hotel=None, ordinary=False):
                 noon_rest_missing=bool(profile['need_noon_rest'] and not ordinary and len(route) >= 2
                                        and not any(r['kind'] == 'rest' for r in rows)),
                 estimated=True)
+
+
+# 园内模式：乐园里项目之间只能步行；项目内步数按类型估算，排队站立不计步。
+PARK_RADIUS_M = 2500  # 距乐园主坐标的直线距离，判定是否园内项目
+SHOW_WORDS = ('剧场', '剧院', '演出', '秀', '欢唱', '盛会', '巡游')
+THRILL_WORDS = ('过山车', '矿山车', '光轮', '漂流', '飞行器', '跳楼')
+RIDE_WORDS = THRILL_WORDS + ('奇遇', '营救', '专列', '奇航', '历险', '之战', '旋转', '飞椅', '嘉年华', '小火车')
+HALL_WORDS = ('馆', '池', '展')
+PARK_ITEM_STEPS = {'show': 150, 'ride': 300, 'hall': 800, 'area': 1500, 'other': 600}
+PARK_ITEM_MODES = {'show': '坐着看演出', 'ride': '乘坐项目', 'hall': '展馆参观', 'area': '园区游览', 'other': '园内游览'}
+
+
+def park_item_kind(item):
+    name, category = item.get('name') or '', item.get('category') or ''
+    if category == '剧院剧场' or any(w in name for w in SHOW_WORDS):
+        return 'show'
+    if any(w in name for w in RIDE_WORDS):
+        return 'ride'
+    if category == '海洋馆' or any(w in name for w in HALL_WORDS):
+        return 'hall'
+    if category in ('公园乐园', '文创街区', '主题乐园') or name.endswith(('世界', '岛', '湾', '花园', '大街', '小镇', '城')):
+        return 'area'
+    return 'other'
+
+
+def park_item_risk(item, travelers):
+    risks = [stair_risk(item)] if stair_risk(item) else []
+    if any(w in (item.get('name') or '') for w in THRILL_WORDS) and any(t['age'] <= 12 for t in travelers):
+        risks.append('儿童可能受身高限制（未核实）')
+    return '；'.join(risks)
+
+
+def walk(a, b, travelers):
+    meters = distance_m(a, b)
+    return dict(kind='transfer', name=f"{a['name']} → {b['name']}", mode='园内步行',
+                distance_m=round(meters, 1), walking_m=round(meters, 1),
+                steps=walking_steps(meters, travelers), estimated=True)
+
+
+def bill_park_day(date, park, items, profile, hotel=None, ordinary=False):
+    """一天在同一个乐园：酒店往返乐园入口照常计，入口与项目之间、项目之间全部步行。"""
+    travelers = profile['travelers']
+    limited = any(t['mobility'] == 'limited' for t in travelers)
+    rows = []
+    if hotel and items:
+        rows.append(transfer(hotel, park, travelers, 2000 if ordinary else 800, ordinary, limited))
+    previous = park
+    for index, item in enumerate(items):
+        rows.append(walk(previous, item, travelers))
+        kind = park_item_kind(item)
+        steps = PARK_ITEM_STEPS[kind]
+        rows.append(dict(kind='visit', name=item['name'], mode=PARK_ITEM_MODES[kind],
+                         distance_m=round(steps*stride_m(travelers), 1), walking_m=round(steps*stride_m(travelers), 1),
+                         steps=steps, risk=park_item_risk(item, travelers), seated=kind == 'show', estimated=True))
+        previous = item
+        if profile['need_noon_rest'] and not ordinary and not any(r['kind'] == 'rest' for r in rows) \
+                and index < len(items) - 1 and noon_rest_due(rows, profile['daily_step_cap'], index + 1):
+            rows.append(dict(kind='rest', name='园内午间坐下休息（餐厅或座位，场所待确认）', mode='午休',
+                             distance_m=0, walking_m=0, steps=0, estimated=True))
+    if items:
+        rows.append(walk(previous, park, travelers))
+        if hotel:
+            rows.append(transfer(park, hotel, travelers, 2000 if ordinary else 800, ordinary, limited))
+    return dict(_close_day(date, items, rows, profile, ordinary), park=park['name'])

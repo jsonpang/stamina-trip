@@ -41,8 +41,8 @@ def run(command: str, **params) -> dict:
 
 
 def search_hotel(dest_name, poi_name=None, check_in_date=None, check_out_date=None,
-                 max_price=None, sort=None) -> dict:
-    return run("search-hotel", dest_name=dest_name, poi_name=poi_name,
+                 max_price=None, sort=None, key_words=None) -> dict:
+    return run("search-hotel", dest_name=dest_name, poi_name=poi_name, key_words=key_words,
                check_in_date=check_in_date, check_out_date=check_out_date,
                max_price=max_price, sort=sort)
 

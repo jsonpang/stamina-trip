@@ -28,7 +28,7 @@ def test_noon_rest_after_heavy_first_stop(profile):
 
 
 def test_boat_words_count_as_boat_ride():
-    for name in ('西湖夜游', '京杭大运河游船', '钱塘江游艇', '秦淮画舫', '珠江观光船'):
+    for name in ('西湖夜游', '京杭大运河游船', '钱塘江游轮', '钱塘江游艇', '秦淮画舫', '珠江观光船'):
         assert poi_steps(dict(name=name, category='城市观光')) == BOAT_STEPS
     assert poi_steps(dict(name='西湖', category='城市观光')) != BOAT_STEPS
 

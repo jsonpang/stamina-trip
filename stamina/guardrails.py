@@ -3,7 +3,7 @@ import re
 
 PROTECTED_TERMS = ('电梯', '无障碍', '观光车', '索道', '轮椅')
 # Additional physical claims observed during live verification are also source-gated.
-PHYSICAL_TERMS = ('平坦', '休息区域', '休息区', '座椅', '宽敞', '室内', '坡度', '适合行动受限', '适合老人', '老人友好')
+PHYSICAL_TERMS = ('平坦', '休息区域', '休息区', '座椅', '宽敞', '室内', '坡度', '适合', '老人友好', '轻松', '平稳', '舒适', '不累')
 
 
 def filter_claims(text, description, poi_name=''):
@@ -23,7 +23,9 @@ def explain_plan(plan, complete=None):
     pois = {p['name']: p for day in plan['stamina'] for p in day['pois']}
     payload = dict(profile=plan['profile'],
                    days=[dict(date=d['date'], total_steps=d['total_steps'],
-                              pois=[dict(name=p['name'], estimated_steps=poi_steps(p)) for p in d['pois']],
+                              pois=[dict(name=p['name'], estimated_steps=next((r['steps'] for r in d['bill'] if r['kind'] == 'visit'
+                                                                             and r['name'] == p['name']), poi_steps(p)))
+                                    for p in d['pois']],
                               bill=d['bill']) for d in plan['stamina']],
                    descriptions={name: p.get('description', '') for name, p in pois.items()})
     import json

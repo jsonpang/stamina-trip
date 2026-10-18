@@ -45,6 +45,12 @@ def markdown(plan):
             lines += ['', f"[飞猪预订]({hotel['detailUrl']})"]
     else:
         lines += ['暂无满足坐标、价格与预算条件的酒店。']
+    if plan.get('hotel_compare'):
+        lines += ['', '## 酒店对比（同一行程，换酒店重算）', '',
+                  '| 酒店 | 每晚报价 | 距首日景点（直线米） | 每天步数（估算） |', '|---|---|---:|---|']
+        for h in plan['hotel_compare']:
+            steps = '；'.join(f"{d['date']} {d['total_steps']}{'（超限）' if d['over_cap'] else ''}" for d in h['days'])
+            lines.append(f"| {cell(h['name'])}{'（已选）' if h['chosen'] else ''} | {cell(h.get('price'))} | {h['distance_m']} | {steps} |")
     lines += ['', '## 景点与飞猪预订', '']
     seen = set()
     for day in plan['ordinary'] + plan['stamina']:

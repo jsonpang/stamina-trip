@@ -8,7 +8,8 @@ import datetime as dt
 import json
 
 from .planner import collect_and_plan, choose_hotel, ordinary_days, plan_warnings
-from .stamina import is_boat
+from .planner import price_value
+from .stamina import bill_park_day, distance_m, is_boat, DETOUR_FACTOR
 from .tools import SPECS, Session, ToolError
 
 MAX_TURNS = 12
@@ -20,6 +21,7 @@ SYSTEM = '''你是体力预算规划师。按同行人走得动多少来排行�
 compute_stamina 的 verdict 写明是否通过：通过就用完全相同的参数立刻调用 finalize，不要再换点或重算；
 行动受限的同行人尽量避开标了台阶风险的景点；每天 1–3 个景点，夜游放在当天最后；不要安排重复景点。
 需要午休时：午休自动插在累计步数达上限 35% 或走完 2 个点之后，且后面还得有景点，所以一天 2–3 个点时把步数多的点放前面。
+去主题乐园（如迪士尼）时：用 search_park_items 给出乐园名和你知道的园内项目、园区、演出名（8–15 个），只用它返回的项目；乐园那天只排园内项目（每天 4–8 个，按位置顺路排），项目之间按步行计算；演出是坐着看的，适合穿插在走路多的项目之间；标了身高限制风险的项目要提醒，不要替用户断定能不能玩；酒店搜两次：search_hotel(poi_name=乐园名) 找附近的，search_hotel(key_words=乐园名+酒店) 找乐园自营酒店，系统会自动对比两类酒店对步数的影响。
 画像：{profile}
 用户原话：{query}'''
 
@@ -101,6 +103,55 @@ def main_pois(pois):
     return kept
 
 
+ORDINARY_PARK_ITEMS = 8
+
+
+def ordinary_plan(session, routes, candidates, hotel):
+    """普通版：城市日按返回顺序每天 3–4 个点；乐园日按返回顺序每天排满 8 个园内项目、不午休。"""
+    profile = session.profile
+    city = ordinary_days(profile, [p for p in candidates if p['id'] not in session.park_of], hotel)
+    days, used = [], set()
+    for i, (date, route) in enumerate(zip(profile['dates'], routes)):
+        park_id = next((session.park_of[p['id']] for p in route if p['id'] in session.park_of), None)
+        if park_id is None:
+            days.append(city[i])
+            continue
+        # 园内项目名常以乐园名开头（「上海迪士尼度假区-加勒比海盗…」），不经过子景点过滤。
+        everything = sorted(session.pois.values(), key=lambda p: p['source_order'])
+        items = [p for p in everything if session.park_of.get(p['id']) == park_id and p['id'] not in used]
+        items = items[:ORDINARY_PARK_ITEMS]
+        used.update(p['id'] for p in items)
+        days.append(bill_park_day(date, session.pois[park_id], items, profile, hotel, ordinary=True))
+    return days
+
+
+HOTEL_COMPARE_MAX = 4
+
+
+def compare_hotels(session, routes, chosen):
+    """同一行程换不同酒店重算：已选酒店、离首日景点最近的两家、最便宜的一家。"""
+    hotels = list(session.hotels.values())
+    if not hotels or not any(routes):
+        return []
+    first = next(r for r in routes if r)
+    center = {'latitude': sum(float(p['latitude']) for p in first) / len(first),
+              'longitude': sum(float(p['longitude']) for p in first) / len(first)}
+    by_distance = sorted(hotels, key=lambda h: distance_m(center, h))
+    picks = ([session.hotels[chosen['id']]] if chosen else []) + by_distance[:2] + [min(hotels, key=price_value)]
+    seen, rows = set(), []
+    for hotel in picks:
+        if hotel['id'] in seen or len(rows) >= HOTEL_COMPARE_MAX:
+            continue
+        seen.add(hotel['id'])
+        days = session.bill(routes, hotel)
+        rows.append(dict(id=hotel['id'], name=hotel['name'], price=hotel.get('price'), star=hotel.get('star'),
+                         detailUrl=hotel.get('detailUrl'), chosen=bool(chosen) and hotel['id'] == chosen['id'],
+                         distance_m=round(distance_m(center, hotel) / DETOUR_FACTOR),
+                         days=[dict(date=d['date'], total_steps=d['total_steps'], over_cap=d['over_cap'],
+                                    taxi_km=d['taxi_km']) for d in days]))
+    return rows
+
+
 def plan_from_session(session):
     profile = session.profile
     routes, hotel = session.final
@@ -109,7 +160,7 @@ def plan_from_session(session):
         # Report distance to the first non-empty day's centroid, as the deterministic planner does.
         hotel = choose_hotel([hotel], next(r for r in routes if r), profile['budget_per_night'])
     candidates = main_pois(sorted(session.pois.values(), key=lambda p: p['source_order']))
-    plan = dict(profile=profile, ordinary=ordinary_days(profile, candidates, hotel), stamina=active, hotel=hotel,
+    plan = dict(profile=profile, ordinary=ordinary_plan(session, routes, candidates, hotel), stamina=active, hotel=hotel,
                 warnings=plan_warnings(hotel, active), removed_claims=[], explanation='', system_messages=[])
     if hotel:
         query = session.hotel_queries[hotel['id']]
@@ -117,6 +168,13 @@ def plan_from_session(session):
         plan['hotel_stay'] = dict(check_in=query['check_in'], check_out=query['check_out'])
     plan['system_messages'] = list(dict.fromkeys(str(r['systemMessage']) for r in session.raw_results
                                                  if r.get('systemMessage')))
+    plan['hotel_compare'] = compare_hotels(session, routes, hotel)
+    if any(d.get('park') for d in active):
+        plan['warnings'] += ['排队站立时间未计入步数；直通卡/尊享卡可缩短排队，价格与适用项目以乐园官方为准（未核实）。',
+                             '园内午休按就近坐下估算；是否出园回酒店及再入园规则未核实。',
+                             '园内项目坐标来自飞猪，项目之间按直线距离乘 1.3 估算步行，非园内实际路线。',
+                             '酒店对比口径：酒店到乐园 800 米内按步行，超过按打车每段 200 步；未计接驳车、停车场到入口的步行，'
+                             '所以近处酒店可能显示步数更多，实际以接驳方式为准。']
     plan['data_retrieved_at'] = dt.datetime.now(dt.timezone.utc).isoformat()
     return plan
 
