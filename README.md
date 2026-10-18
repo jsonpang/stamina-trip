@@ -1,5 +1,7 @@
 # Stamina Trip · 体力预算规划师
 
+![普通版 vs 体力版](web/screenshots/page-1440.png)
+
 按同行人走得动多少来排行程。旅行实体、价格、坐标和链接均来自飞猪 flyai。
 
 ## 怎么工作
@@ -29,7 +31,7 @@ Copy-Item .env.example .env
 python -X utf8 -m stamina.cli "爸妈 68 岁，妈妈膝盖不好，带一个 6 岁孩子，杭州 11月7日-8日 两天，每天最多走 6000 步，中午要午休。"
 ```
 
-产物为 `out/plan.md` 和 `out/plan.json`，与 `.env` 一起被 Git 忽略。实际验证模型为 `deepseek-v4.1-flash`，接口 `http://127.0.0.1:8790/v1`；如不可用，可手动改为 `glm-5.3-flash` 后重试。
+产物为 `out/plan.md` 和 `out/plan.json`，与 `.env` 一起被 Git 忽略。模型走 OpenAI 兼容接口，换模型只改 `.env` 的 `LLM_BASE_URL`、`LLM_MODEL`、`LLM_API_KEY`；模型需支持 function calling。
 
 ```powershell
 python -m uvicorn stamina.server:app --host 127.0.0.1 --port 8000
