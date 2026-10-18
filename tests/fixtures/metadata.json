@@ -6,5 +6,9 @@
   ],
   "hotel_search_poi": "西湖游船",
   "retrieved_at": "2026-10-18T13:44:16.113714+00:00",
-  "note": "Raw flyai responses; no fabricated entities or coordinates"
+  "note": "Raw flyai responses; no fabricated entities or coordinates",
+  "hotel_stay": {
+    "check_in": "2026-11-07",
+    "check_out": "2026-11-08"
+  }
 }
