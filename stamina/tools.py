@@ -55,7 +55,7 @@ class Session:
         self.search_hotel_fn = search_hotel or flyai.search_hotel
         self.pois, self.hotels = {}, {}  # id -> full flyai item
         self.raw_results = []
-        self.hotel_query = None
+        self.hotel_queries = {}  # hotel id -> the search that returned it
         self.final = None
 
     def call(self, name, args):
@@ -91,7 +91,7 @@ class Session:
                                       check_out_date=checkout, max_price=self.profile['budget_per_night'],
                                       sort='distance_asc')
         self.raw_results.append(result)
-        self.hotel_query = dict(poi_name=poi_name, check_in=dates[0], check_out=checkout)
+        query = dict(poi_name=poi_name, check_in=dates[0], check_out=checkout)
         items = []
         budget = self.profile['budget_per_night']
         for item in found(result):
@@ -101,6 +101,7 @@ class Session:
                 continue
             key = str(item.get('shId') or item.get('id') or item['name'])
             self.hotels[key] = dict(item, id=key)
+            self.hotel_queries[key] = query
             items.append(self.hotels[key])
         return {'items': [dict(id=h['id'], name=h['name'], price=h.get('price'),
                                latitude=h['latitude'], longitude=h['longitude']) for h in items[:8]]}
@@ -147,6 +148,8 @@ class Session:
                 problems.append(f"{day['date']} 夜游必须放在当天最后")
             if day['over_cap']:
                 problems.append(f"{day['date']} 共 {day['total_steps']} 步，超过上限 {day['cap']}")
+            if day['noon_rest_missing']:
+                problems.append(f"{day['date']} 排不进午休：午休要在累计步数达上限 35% 或走完 2 个点之后、且后面还有景点，请调整顺序或增减景点")
             if day['taxi_over_budget']:
                 problems.append(f"{day['date']} 打车 {day['taxi_km']} 公里，超过 {DAILY_TAXI_KM_BUDGET:g} 公里")
         if problems:
@@ -175,4 +178,5 @@ def poi_view(poi):
 def day_view(day):
     return dict(date=day['date'], total_steps=day['total_steps'], cap=day['cap'], over_cap=day['over_cap'],
                 taxi_km=day['taxi_km'], taxi_over_budget=day['taxi_over_budget'], long_rides=day['long_rides'],
+                noon_rest_missing=day['noon_rest_missing'],
                 bill=[f"{r['name']}｜{r['mode']}｜{r['steps']}步｜累计{r['cumulative_steps']}" for r in day['bill']])

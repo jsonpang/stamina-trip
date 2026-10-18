@@ -47,11 +47,13 @@ def test_noon_hotel_or_local(profile, raw_pois, raw_hotels):
     pois = [p for result in raw_pois for p in result['data']['itemList']]
     poi,close = min(((p,h) for p in pois for h in hotels),key=lambda pair:distance_m(*pair))
     assert distance_m(poi,close)<=5000
-    day = bill_day(profile['dates'][0],[poi],profile,close)
+    profile['daily_step_cap']=1000  # 午休在第一个点后到期；后面还需有一个点
+    after = next(p for p in pois if p['name']!=poi['name'])
+    day = bill_day(profile['dates'][0],[poi,after],profile,close)
     assert any(r['name']=='午间回酒店休息' for r in day['bill'])
     far_poi = max(raw_pois[0]['data']['itemList'],key=lambda x:distance_m(x,close))
     assert distance_m(far_poi,close)>5000
-    day = bill_day(profile['dates'][0],[far_poi],profile,close)
+    day = bill_day(profile['dates'][0],[far_poi,after],profile,close)
     assert any('就近休息' in r['name'] for r in day['bill'])
     profile['need_noon_rest']=False
-    assert not any(r['kind']=='rest' for r in bill_day(profile['dates'][0],[poi],profile,close)['bill'])
+    assert not any(r['kind']=='rest' for r in bill_day(profile['dates'][0],[poi,after],profile,close)['bill'])

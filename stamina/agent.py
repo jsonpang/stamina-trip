@@ -8,6 +8,7 @@ import datetime as dt
 import json
 
 from .planner import collect_and_plan, choose_hotel, ordinary_days, plan_warnings
+from .stamina import is_boat
 from .tools import SPECS, Session, ToolError
 
 MAX_TURNS = 12
@@ -17,6 +18,7 @@ SYSTEM = '''你是体力预算规划师。按同行人走得动多少来排行�
 然后用 compute_stamina 试算，超上限或打车超 20 公里就换点或减点再算，满意后调用 finalize。
 规则：每天的步数、是否超限只看 compute_stamina 返回值，不要自己估算；只能使用工具返回的 id；
 行动受限的同行人尽量避开标了台阶风险的景点；每天 1–3 个景点，夜游放在当天最后；不要安排重复景点。
+需要午休时：午休自动插在累计步数达上限 35% 或走完 2 个点之后，且后面还得有景点，所以一天 2–3 个点时把步数多的点放前面。
 画像：{profile}
 用户原话：{query}'''
 
@@ -78,9 +80,19 @@ def run_agent(query, profile, complete=None, search_poi=None, search_hotel=None,
 
 
 def main_pois(pois):
-    """Drop sub-areas such as「杭州动物园-虎山」when the parent POI is also a candidate."""
+    """Drop sub-areas such as「杭州动物园-虎山」or「西湖游船涌金池码头」when the parent POI is also a
+    candidate, and keep only the first boat ride, so the ordinary plan is not padded with variants."""
     names = {p['name'] for p in pois}
-    return [p for p in pois if not any(p['name'].startswith(n + '-') for n in names)]
+    kept, boat_seen = [], False
+    for p in pois:
+        if any(p['name'] != n and p['name'].startswith(n) for n in names):
+            continue
+        if is_boat(p):
+            if boat_seen:
+                continue
+            boat_seen = True
+        kept.append(p)
+    return kept
 
 
 def plan_from_session(session):
@@ -93,9 +105,10 @@ def plan_from_session(session):
     candidates = main_pois(sorted(session.pois.values(), key=lambda p: p['source_order']))
     plan = dict(profile=profile, ordinary=ordinary_days(profile, candidates, hotel), stamina=active, hotel=hotel,
                 warnings=plan_warnings(hotel, active), removed_claims=[], explanation='', system_messages=[])
-    if hotel and session.hotel_query:
-        plan['hotel_search_poi'] = session.hotel_query['poi_name']
-        plan['hotel_stay'] = dict(check_in=session.hotel_query['check_in'], check_out=session.hotel_query['check_out'])
+    if hotel:
+        query = session.hotel_queries[hotel['id']]
+        plan['hotel_search_poi'] = query['poi_name']
+        plan['hotel_stay'] = dict(check_in=query['check_in'], check_out=query['check_out'])
     plan['system_messages'] = list(dict.fromkeys(str(r['systemMessage']) for r in session.raw_results
                                                  if r.get('systemMessage')))
     plan['data_retrieved_at'] = dt.datetime.now(dt.timezone.utc).isoformat()

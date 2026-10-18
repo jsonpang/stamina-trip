@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="referrer" content="no-referrer">
+  <title>体力预算规划师 - 2026 飞猪 AI 旅行创新大赛</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- 顶部状态栏提示 (演示数据或实时接口提示) -->
+  <aside id="top-banner" class="top-banner" role="status" aria-live="polite">
+    <div class="banner-inner">
+      <span class="banner-badge" id="banner-badge">演示数据</span>
+      <span class="banner-text" id="banner-text">正在初始化，检测后端规划接口...</span>
+      <button type="button" class="banner-close" id="banner-close" aria-label="关闭提示">×</button>
+    </div>
+  </aside>
+
+  <!-- 页面主容器 -->
+  <main class="page-container">
+    
+    <!-- 1. 顶部 Header 区域 -->
+    <header class="app-header">
+      <div class="header-tagline-bar">
+        <span class="contest-badge">2026 飞猪 AI 旅行创新大赛参赛作品</span>
+        <span class="data-source-badge">
+          <svg class="icon-inline" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+            <path d="M8 0L2 3v5c0 4.42 3.42 8.58 6 9.5 2.58-.92 6-5.08 6-9.5V3L8 0zm0 1.5l4.5 2.25V8c0 3.5-2.6 6.8-4.5 7.6-1.9-.8-4.5-4.1-4.5-7.6V3.75L8 1.5z"/>
+          </svg>
+          基于飞猪 fly.ai 实时数据
+        </span>
+      </div>
+      <h1 class="app-title">体力预算规划师</h1>
+      <p class="app-subtitle">按同行人走得动多少来排行程 · 按体力上限估算每天步数</p>
+    </header>
+
+    <!-- 2. 输入与交互区域 -->
+    <section class="card input-card" aria-label="行程需求输入区">
+      <div class="card-header-clean">
+        <h2 class="card-title">出行需求</h2>
+        <span class="card-sub-hint">支持长幼体能、轮椅/膝盖受限、午休及限额步数</span>
+      </div>
+
+      <div class="input-wrapper">
+        <textarea 
+          id="query-input" 
+          class="query-textarea" 
+          rows="3" 
+          placeholder="请输入出游城市、日期、同行人（如老人膝盖不适、幼童）、每天步数上限、午休需求与预算等..."
+        ></textarea>
+      </div>
+
+      <!-- 示例需求快捷填入 -->
+      <div class="preset-section">
+        <span class="preset-label">快捷示例：</span>
+        <div class="preset-chips" id="preset-chips">
+          <button type="button" class="chip-btn active" data-preset="爸妈 68 岁，妈妈膝盖不好，带一个 6 岁孩子，杭州 11月7日-8日 两天，每天最多走 6000 步，中午要午休">
+            杭州 2日 · 68岁长辈+6岁幼童 (限6000步/午休)
+          </button>
+          <button type="button" class="chip-btn" data-preset="三口之家带4岁宝宝，千岛湖 2天1晚，每天不超过 5000 步，推婴儿车需要无障碍平路，预算每晚800元">
+            千岛湖 2日 · 幼童推车 (限5000步/预算800)
+          </button>
+          <button type="button" class="chip-btn" data-preset="陪 72 岁爷爷游北京，老人心脏装有支架不能爬陡坡，3天故宫颐和园慢节奏，每天限走 4000 步，需要午休">
+            北京 3日 · 72岁慢节奏防陡坡 (限4000步/午休)
+          </button>
+        </div>
+      </div>
+
+      <!-- 提交按钮与辅助操作 -->
+      <div class="action-bar">
+        <button type="button" id="submit-btn" class="primary-btn">
+          <span class="btn-text">生成行程规划</span>
+          <span class="btn-spinner hidden" aria-hidden="true"></span>
+        </button>
+        <button type="button" id="reload-sample-btn" class="secondary-btn" title="重新载入内置离线样例">
+          载入演示数据
+        </button>
+      </div>
+
+      <!-- 耗时加载中提示卡片 (30~90秒状态) -->
+      <div id="progress-container" class="progress-container hidden" aria-live="polite">
+        <div class="progress-info-row">
+          <span class="progress-status-text" id="progress-status-text">正在生成，通常需要 30–90 秒</span>
+          <span class="progress-timer" id="progress-timer">已等待 0 秒</span>
+        </div>
+        <div class="progress-bar-track">
+          <div class="progress-bar-fill indeterminate" id="progress-bar-fill"></div>
+        </div>
+      </div>
+
+      <!-- 错误提示区域 (422 / 503 等) -->
+      <div id="error-message-box" class="error-message-box hidden" role="alert">
+        <div class="error-icon-box">!</div>
+        <div class="error-content">
+          <div class="error-title" id="error-title">请求未能完成</div>
+          <div class="error-detail" id="error-detail"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 3. 画像卡区域 Profile Card -->
+    <section id="profile-section" class="card profile-card" aria-label="出行人体力画像">
+      <div class="card-header-clean">
+        <h2 class="card-title">识别同行人体力画像</h2>
+        <span class="profile-meta-city" id="profile-meta-city">--</span>
+      </div>
+
+      <div class="profile-grid">
+        <div class="profile-item travelers-box">
+          <span class="item-label">同行人群像</span>
+          <div class="traveler-tags" id="profile-travelers">
+            <span class="placeholder-text">解析中...</span>
+          </div>
+        </div>
+
+        <div class="profile-item cap-box">
+          <span class="item-label">每日步数红线</span>
+          <div class="item-val highlight-val" id="profile-step-cap">-- 步 / 天</div>
+        </div>
+
+        <div class="profile-item rest-box">
+          <span class="item-label">午间休整策略</span>
+          <div class="item-val" id="profile-noon-rest">--</div>
+        </div>
+
+        <div class="profile-item budget-box">
+          <span class="item-label">每晚住宿预算</span>
+          <div class="item-val" id="profile-budget">--</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 确定性规划兜底提示 (mode 为 fallback 时显示一行灰色提示并附原因) -->
+    <div id="fallback-banner" class="fallback-banner hidden" role="status"></div>
+
+    <!-- 4. 核心对比：普通版 vs 体力版 (全页最重要视觉) -->
+    <section class="card comparison-card" aria-label="核心方案对比">
+      <div class="comparison-header">
+        <div>
+          <h2 class="card-title comparison-title">
+            核心方案对比
+            <span class="vs-badge">普通版 vs 体力版</span>
+          </h2>
+          <p class="card-sub-hint">同一出行需求下，普通版与体力版方案规划对比</p>
+        </div>
+        <!-- 天数切换 Tabs (当多天时切换，也可一键全览) -->
+        <div class="day-selector-tabs" id="day-selector-tabs">
+          <!-- 动态生成天数 Tab -->
+        </div>
+      </div>
+
+      <!-- 桌面左右双栏 / 手机端上下堆叠 对比容器 -->
+      <div class="comparison-columns" id="comparison-columns">
+        <!-- 动态渲染：左边普通版，右边体力版 -->
+      </div>
+    </section>
+
+    <!-- 5. 体力账单 Stamina Bill -->
+    <section class="card stamina-bill-card" aria-label="体力版逐段测算账单">
+      <div class="bill-header">
+        <div>
+          <h2 class="card-title">体力消耗账单（体力版逐段测算）</h2>
+          <p class="card-sub-hint">包含接驳方式、步行米数、步数累加与台阶风险提示（标注「估算」）</p>
+        </div>
+        <div class="bill-day-filter" id="bill-day-filter">
+          <!-- 天数过滤 -->
+        </div>
+      </div>
+
+      <div class="table-scroll-container">
+        <table class="stamina-table" id="stamina-bill-table">
+          <thead>
+            <tr>
+              <th scope="col" style="width: 60px;">序号</th>
+              <th scope="col">路段 / 节点名称</th>
+              <th scope="col" style="width: 100px;">出行方式</th>
+              <th scope="col" style="width: 130px;">距离 / 步行米数</th>
+              <th scope="col" style="width: 110px;">消耗步数</th>
+              <th scope="col" style="width: 140px;">累计 / 当日上限</th>
+              <th scope="col" style="width: 170px;">路况与风险标注</th>
+            </tr>
+          </thead>
+          <tbody id="stamina-bill-tbody">
+            <tr>
+              <td colspan="7" class="table-loading">正在加载数据...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="table-foot-legend">
+        <span>* 注：所有距离、步数与台阶均为估算值（已附「估算」标识），实际游览需结合排队与就餐适当预留余量。</span>
+      </div>
+    </section>
+
+    <!-- 6. 酒店推荐卡 Hotel Card -->
+    <section class="card hotel-section-card" aria-label="推荐重心酒店">
+      <div class="card-header-clean">
+        <h2 class="card-title">推荐住宿（按景点重心匹配）</h2>
+        <span class="card-sub-hint">按第一天游览景点重心匹配的住宿推荐</span>
+      </div>
+
+      <div class="hotel-card-container" id="hotel-card-container">
+        <!-- 动态注入酒店卡片 -->
+        <div class="hotel-skeleton">正在加载精选酒店...</div>
+      </div>
+    </section>
+
+    <!-- 7. 智能体决策过程 (有 tool_trace 时显示) -->
+    <section id="tool-trace-section" class="card tool-trace-card hidden" aria-label="智能体决策过程">
+      <div class="tool-trace-header" id="tool-trace-toggle-header">
+        <div class="trace-title-group">
+          <span class="agent-mode-badge" id="agent-mode-badge">Agent 决策链路</span>
+          <h2 class="card-title">智能体推理过程（Tool Trace）</h2>
+          <span class="trace-count-hint" id="trace-step-count">0 步调用</span>
+        </div>
+        <button type="button" class="trace-toggle-btn" id="trace-toggle-btn">
+          <span id="trace-toggle-text">展开过程</span>
+          <svg class="chevron-icon" id="trace-chevron" viewBox="0 0 16 16" fill="currentColor">
+            <path d="M4 6l4 4 4-4H4z"/>
+          </svg>
+        </button>
+      </div>
+
+      <div id="tool-trace-body" class="tool-trace-body hidden">
+        <ol class="timeline-list" id="tool-trace-timeline">
+          <!-- 动态渲染时间线节点 -->
+        </ol>
+      </div>
+    </section>
+
+    <!-- 8. 页脚与合规免责 Footer -->
+    <footer class="app-footer">
+      <!-- 审核过滤提示 (removed_claims 非空时显示) -->
+      <div class="claims-audit-bar hidden" id="claims-audit-bar">
+        <span class="audit-icon">🛡️</span>
+        <span id="claims-audit-text"></span>
+      </div>
+
+      <!-- Warnings 警告说明 -->
+      <div class="warnings-box" id="warnings-box">
+        <div class="warnings-title">重要出行提示与测算说明：</div>
+        <ul class="warnings-list" id="warnings-list">
+          <!-- 动态注入 warnings -->
+        </ul>
+      </div>
+
+      <!-- system_messages 原样显示 -->
+      <div id="system-messages-box" class="system-messages-box hidden">
+        <div class="sys-msg-title">系统诊断消息 (System Messages)：</div>
+        <pre class="sys-msg-pre" id="system-messages-pre"></pre>
+      </div>
+
+      <div class="footer-bottom-meta">
+        <p>2026 飞猪 AI 旅行创新大赛参赛作品 · 体力预算规划师</p>
+        <p class="copyright-sub">基于飞猪 fly.ai 开放接口与官方实时数据 · 严禁未授权商用 · 仅作创新评审展示</p>
+      </div>
+    </footer>
+
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>

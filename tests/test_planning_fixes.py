@@ -12,7 +12,7 @@ HOTEL = dict(name='酒店', latitude='30.25', longitude='120.16')
 
 def test_noon_rest_not_after_short_first_stop(profile):
     boat, museum = poi('西湖游船', 30.251, 120.161), poi('浙江省博物馆', 30.252, 120.162)
-    day = bill_day(profile['dates'][0], [boat, museum], profile, HOTEL)
+    day = bill_day(profile['dates'][0], [boat, museum, poi('中国丝绸博物馆', 30.253, 120.163)], profile, HOTEL)
     kinds = [r['kind'] for r in day['bill']]
     # 游船只有约 500 步，不能逛完第一个点就回酒店；第二个点之后才午休。
     first_rest = kinds.index('rest')
@@ -50,3 +50,18 @@ def test_best_day_avoids_taxi_over_budget(profile):
     day = best_day(profile['dates'][0], [far, near], profile, HOTEL)
     assert day['taxi_km'] <= 20
     assert [p['name'] for p in day['pois']] == ['近点']
+
+
+def test_no_hotel_to_hotel_leg_after_noon_rest(profile):
+    zoo = poi('杭州动物园', 30.251, 120.161, category='动物园')
+    day = bill_day(profile['dates'][0], [zoo], profile, HOTEL)
+    # 午休必须后面还有景点；只有一个点就是收工回酒店，不插午休，也不出现酒店到酒店。
+    assert not any(r['kind'] == 'rest' for r in day['bill'])
+    assert not any(r['name'] == '酒店 → 酒店' for r in day['bill'])
+
+
+def test_rest_missing_flagged_when_order_prevents_it(profile):
+    boat, museum = poi('西湖游船', 30.251, 120.161), poi('浙江省博物馆', 30.252, 120.162)
+    assert bill_day(profile['dates'][0], [boat, museum], profile, HOTEL)['noon_rest_missing']
+    zoo = poi('杭州动物园', 30.251, 120.161, category='动物园')
+    assert not bill_day(profile['dates'][0], [zoo, museum], profile, HOTEL)['noon_rest_missing']

@@ -13,6 +13,7 @@ def create_plan(query):
     plan = explain_plan(agent_plan(query, parse_profile(query)))
     from .config import llm_settings
     plan['llm_model'] = llm_settings()[1]
+    plan['query'] = query
     return plan
 
 

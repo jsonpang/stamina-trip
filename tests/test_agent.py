@@ -5,7 +5,7 @@ import pytest
 from stamina import agent
 from stamina.render import markdown
 
-GOOD_DAYS = [['203005', '2267'], ['14761420']]  # 西湖游船+孤山馆区 / 杭州博物馆
+GOOD_DAYS = [['2267'], ['14761420']]  # 孤山馆区 / 杭州博物馆
 HOTEL = '58674065'
 
 
@@ -63,6 +63,15 @@ def test_agent_finalizes_with_recomputed_steps(profile, searches):
     assert '累计' in tool_msgs[-1]['content']
     assert '智能体决策过程' in markdown(plan)
     assert len(plan['ordinary']) == 2
+
+
+def test_finalize_rejects_day_without_noon_rest(profile, searches):
+    search_poi, search_hotel, _ = searches
+    no_rest = [['203005', '2267'], ['14761420']]  # 游船只有约 500 步，孤山馆区是最后一站：排不进午休
+    turns = happy_turns(dict(days=no_rest, hotel_id=HOTEL)) + ([call('finalize', 6, days=GOOD_DAYS, hotel_id=HOTEL)],)
+    plan = agent.agent_plan('q', profile, scripted(*turns), search_poi, search_hotel)
+    assert '午休' in plan['tool_trace'][-2]['error']
+    assert plan['mode'] == 'agent'
 
 
 def test_model_reported_steps_are_ignored(profile, searches):
@@ -133,5 +142,6 @@ def test_free_text_category_becomes_keyword(profile, searches):
 
 
 def test_ordinary_skips_sub_areas():
-    pois = [dict(name='杭州动物园'), dict(name='杭州动物园-虎山'), dict(name='西湖游船')]
-    assert [p['name'] for p in agent.main_pois(pois)] == ['杭州动物园', '西湖游船']
+    pois = [dict(name='杭州动物园'), dict(name='杭州动物园-虎山'), dict(name='西湖游船'),
+            dict(name='西湖游船涌金池码头'), dict(name='西湖外事游船'), dict(name='杭州博物馆')]
+    assert [p['name'] for p in agent.main_pois(pois)] == ['杭州动物园', '西湖游船', '杭州博物馆']

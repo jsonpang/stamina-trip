@@ -117,11 +117,14 @@ def bill_day(date, route, profile, hotel=None, ordinary=False):
                          walking_m=round(poi_steps(poi)*stride_m(profile['travelers']), 1),
                          steps=poi_steps(poi), risk=stair_risk(poi), estimated=True))
         previous = poi
-        # 午休插入时机：只在步数达到上限 35% 或已走完 2 个点之后，避免逛完第一个点就回酒店。
+        # 午休插入时机：只在步数达到上限 35% 或已走完 2 个点之后，避免逛完第一个点就回酒店；
+        # 之后必须还有景点，否则只是收工回酒店。
         if profile['need_noon_rest'] and not ordinary and not rest_before \
-                and not any(r['kind'] == 'rest' for r in rows) and noon_rest_due(rows, cap, index + 1):
+                and not any(r['kind'] == 'rest' for r in rows) and index < len(route) - 1 \
+                and noon_rest_due(rows, cap, index + 1):
             previous = _noon_rest(rows, poi, hotel, profile, threshold, limited)
-    if hotel and route:
+    # 午休已回到酒店且之后没有景点时，不再加一段酒店到酒店。
+    if hotel and route and previous is not hotel:
         rows.append(transfer(previous, hotel, profile['travelers'], threshold, ordinary, limited))
     total = 0
     for row in rows:
@@ -132,4 +135,7 @@ def bill_day(date, route, profile, hotel=None, ordinary=False):
     return dict(date=date, pois=list(route), bill=rows, total_steps=total, cap=cap,
                 over_cap=total > cap, taxi_km=taxi_km,
                 taxi_over_budget=not ordinary and taxi_km > DAILY_TAXI_KM_BUDGET,
-                long_rides=sum(bool(r.get('long_ride')) for r in rows), estimated=True)
+                long_rides=sum(bool(r.get('long_ride')) for r in rows),
+                noon_rest_missing=bool(profile['need_noon_rest'] and not ordinary and len(route) >= 2
+                                       and not any(r['kind'] == 'rest' for r in rows)),
+                estimated=True)

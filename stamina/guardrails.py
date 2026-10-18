@@ -3,7 +3,7 @@ import re
 
 PROTECTED_TERMS = ('电梯', '无障碍', '观光车', '索道', '轮椅')
 # Additional physical claims observed during live verification are also source-gated.
-PHYSICAL_TERMS = ('平坦', '休息区域', '休息区', '座椅', '宽敞', '室内', '坡度')
+PHYSICAL_TERMS = ('平坦', '休息区域', '休息区', '座椅', '宽敞', '室内', '坡度', '适合行动受限', '适合老人', '老人友好')
 
 
 def filter_claims(text, description, poi_name=''):

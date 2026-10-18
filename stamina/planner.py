@@ -79,7 +79,7 @@ def best_day(date, available, profile, hotel=None, anchor=None, max_taxi_km=None
             day = bill_day(date, route, profile, hotel)
             if day['over_cap']:
                 continue
-            key = (-count, sum(bool(stair_risk(p)) + (not p.get('category')) for p in route) if limited else 0,
+            key = (day['noon_rest_missing'], -count, sum(bool(stair_risk(p)) + (not p.get('category')) for p in route) if limited else 0,
                    sum(p['source_order'] for p in route), day['total_steps'],
                    tuple(p['source_order'] for p in route))
             # Day-total taxi distance is a cost for the stamina version: keep the
