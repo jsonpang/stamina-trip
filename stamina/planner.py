@@ -5,7 +5,7 @@ import math
 import re
 
 from . import flyai
-from .stamina import bill_day, distance_m, stair_risk
+from .stamina import bill_day, distance_m, stair_risk, is_boat, DAILY_TAXI_KM_BUDGET
 
 
 def usable_coordinates(item):
@@ -61,9 +61,12 @@ def choose_hotel(hotels, route, budget):
                        ('符合每晚预算。' if budget is not None else '未设置每晚预算。'))
 
 
-def best_day(date, available, profile, hotel=None, anchor=None):
+def best_day(date, available, profile, hotel=None, anchor=None, max_taxi_km=None):
     limited = any(t['mobility'] == 'limited' for t in profile['travelers'])
+    # 体力版把长距离打车计成成本：默认当天打车总里程不超过 20 公里。
+    max_taxi_km = DAILY_TAXI_KM_BUDGET if max_taxi_km is None else max_taxi_km
     best, best_key = None, None
+    fallback, fallback_key = None, None
     for count in range(1, min(3, len(available))+1):
         for route in itertools.permutations(available, count):
             # A returned night-tour POI belongs at the end, after daytime rest.
@@ -71,7 +74,7 @@ def best_day(date, available, profile, hotel=None, anchor=None):
                 continue
             if anchor and route[0].get('id', route[0]['name']) != anchor.get('id', anchor['name']):
                 continue
-            if sum(any(word in p['name'] for word in ('游船', '游轮', '夜游', '扬帆')) for p in route) > 1:
+            if sum(is_boat(p) for p in route) > 1:
                 continue
             day = bill_day(date, route, profile, hotel)
             if day['over_cap']:
@@ -79,15 +82,21 @@ def best_day(date, available, profile, hotel=None, anchor=None):
             key = (-count, sum(bool(stair_risk(p)) + (not p.get('category')) for p in route) if limited else 0,
                    sum(p['source_order'] for p in route), day['total_steps'],
                    tuple(p['source_order'] for p in route))
-            if best_key is None or key < best_key:
+            # Day-total taxi distance is a cost for the stamina version: keep the
+            # cheapest-by-taxi route as fallback, but prefer routes within budget.
+            in_budget = day['taxi_km'] <= max_taxi_km
+            candidate_key = (0 if in_budget else 1,) + key
+            if in_budget and (best_key is None or key < best_key):
                 best, best_key = day, key
-    return best or bill_day(date, [], profile, hotel)
+            if fallback_key is None or candidate_key < fallback_key:
+                fallback, fallback_key = day, candidate_key
+    return best or fallback or bill_day(date, [], profile, hotel)
 
 
-def stamina_days(profile, pois, hotel=None, anchor=None):
+def stamina_days(profile, pois, hotel=None, anchor=None, max_taxi_km=None):
     remaining, days = list(pois), []
     for i, date in enumerate(profile['dates']):
-        day = best_day(date, remaining, profile, hotel, anchor if i == 0 else None)
+        day = best_day(date, remaining, profile, hotel, anchor if i == 0 else None, max_taxi_km)
         days.append(day)
         used = {p.get('id', p['name']) for p in day['pois']}
         remaining = [p for p in remaining if p.get('id', p['name']) not in used]
