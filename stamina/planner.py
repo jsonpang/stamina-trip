@@ -111,10 +111,20 @@ def build_plan(profile, pois, hotels, anchor=None):
     if hotel:
         # Keep the hotel fixed, but report distance to the final route's actual centroid.
         hotel = choose_hotel([hotel], active[0]['pois'], profile['budget_per_night'])
+    return dict(profile=profile, ordinary=ordinary_days(profile, pois, hotel), stamina=active, hotel=hotel,
+                warnings=plan_warnings(hotel, active), removed_claims=[], explanation='', system_messages=[])
+
+
+def ordinary_days(profile, pois, hotel=None):
+    """普通版：按飞猪返回顺序每天取 3–4 个热门点，不考虑体力。"""
     normal = []
     count = 4 if len(pois) >= 4 * len(profile['dates']) else 3
     for i, date in enumerate(profile['dates']):
         normal.append(bill_day(date, pois[i*count:(i+1)*count], profile, hotel, ordinary=True))
+    return normal
+
+
+def plan_warnings(hotel, active):
     warnings = ['全部距离、步数和台阶风险均为估算，非导航路线；开放时间、班次、余票及休息场所需另行确认。',
                 '景点分类步数不包含排队、用餐及临时绕行；实际体力需预留余量。',
                 '普通版按飞猪各次返回顺序合并取点；不同 listRank 榜单不能跨榜比较。',
@@ -124,8 +134,9 @@ def build_plan(profile, pois, hotels, anchor=None):
         warnings.append('未找到同时具备有效坐标、可读价格且符合预算的酒店；酒店往返未计入，午休按就近休息估算。')
     if any(not d['pois'] for d in active):
         warnings.append('部分日期没有可在预算内完成的候选景点，保留空闲，不强行凑点。')
-    return dict(profile=profile, ordinary=normal, stamina=active, hotel=hotel,
-                warnings=warnings, removed_claims=[], explanation='', system_messages=[])
+    if any(d.get('taxi_over_budget') for d in active):
+        warnings.append('部分日期打车总里程超过 20 公里（估算），车程偏长。')
+    return warnings
 
 
 def collect_and_plan(profile, search_poi=None, search_hotel=None):

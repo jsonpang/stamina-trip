@@ -68,6 +68,14 @@ def markdown(plan):
     for item in plan.get('explanation') or []:
         lines += [f"- {item['poi']}：{item['text']}"]
     lines += ['', '## 使用边界', ''] + ['- '+w for w in plan['warnings']]
+    if plan.get('mode') == 'fallback':
+        lines += ['', f"本次使用确定性规划兜底：{plan.get('fallback_reason') or '原因未记录'}"]
+    if plan.get('tool_trace'):
+        lines += ['', '## 智能体决策过程', '', '| # | 工具 | 参数 | 结果 |', '|---|---|---|---|']
+        for i, step in enumerate(plan['tool_trace'], 1):
+            args = '；'.join(f"{k}={json.dumps(v, ensure_ascii=False)}" for k, v in (step.get('args') or {}).items())
+            outcome = step['error'] if step.get('error') else ('通过校验' if step.get('ok') else f"{step.get('n', 0)} 条")
+            lines.append(f"| {i} | {step['tool']} | {cell(args)} | {cell(outcome)} |")
     lines += ['', '基于飞猪 fly.ai 实时数据', ''] + (plan.get('system_messages') or ['飞猪平台提示：本次接口未返回 systemMessage。'])
     return '\n'.join(lines).rstrip()+'\n'
 

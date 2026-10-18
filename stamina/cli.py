@@ -4,13 +4,13 @@ from pathlib import Path
 
 from .config import ROOT
 from .profile import parse_profile
-from .planner import collect_and_plan
+from .agent import agent_plan
 from .guardrails import explain_plan
 from .render import markdown, json_text
 
 
 def create_plan(query):
-    plan = explain_plan(collect_and_plan(parse_profile(query)))
+    plan = explain_plan(agent_plan(query, parse_profile(query)))
     from .config import llm_settings
     plan['llm_model'] = llm_settings()[1]
     return plan
