@@ -1,0 +1,221 @@
+{
+  "data": {
+    "itemList": [
+      {
+        "address": "杭州市西湖游船码头",
+        "category": "城市观光",
+        "description": "西湖风景名胜区沿岸景点众多，乘船游西湖，是领略西湖美景的经典途径之一，湖面上往来的船只和赏景的游人也是西湖一景。坐在游船上，畅游湖光山色，细观绿波岚影，领略一番西湖“淡妆浓抹总相宜”的美丽动人风貌。西湖游船有多种船型和线路，价格不一，游人可根据个人喜好进行选择，非常方便。",
+        "freePoiStatus": "NOT_FREE",
+        "id": "203005",
+        "jumpUrl": "https://router.feizhu.com/multi/webview?url=https%3A%2F%2Frouter.feizhu.com%2Fws%2F0RQnmG",
+        "latitude": "30.23916",
+        "listRank": null,
+        "longitude": "120.145444",
+        "mainPic": "https://img.alicdn.com/imgextra/i4/6000000000183/O1CN01EPq6nL1DDrIVRjduS_!!6000000000183-2-fliggyimage.png",
+        "name": "西湖游船",
+        "poiLevel": null,
+        "ticketInfo": {
+          "commissionMoneyYuan": "0.00",
+          "itemId": "694452144560",
+          "price": "¥69",
+          "priceDate": null,
+          "rate": "0",
+          "skuCommissionStruct": {
+            "5268997282809": {
+              "commissionMoneyYuan": "0.00",
+              "price": "70",
+              "rate": "0"
+            },
+            "6029517820087": {
+              "commissionMoneyYuan": "0.00",
+              "price": "60",
+              "rate": "0"
+            },
+            "6195481163784": {
+              "commissionMoneyYuan": "0.00",
+              "price": "35",
+              "rate": "0"
+            },
+            "老人票（60-69岁）": {
+              "commissionMoneyYuan": "0.00",
+              "price": "60",
+              "rate": "0"
+            },
+            "老人票（70岁以上）": {
+              "commissionMoneyYuan": "0.00",
+              "price": "50",
+              "rate": "0"
+            }
+          },
+          "ticketName": "上岛游船票（可上三潭印月岛） 成人票"
+        }
+      },
+      {
+        "address": "浙江省杭州市滨江区长河街道闻涛路滨江码头",
+        "category": "城市观光",
+        "description": "醉入夜色中，赏钱江新城，日月同辉，钱江龙、钱王射潮、钱江四桥等十里钱塘美景，感受“月到天心处，风来水面时”的闲适惬意，尽情领略霓虹下的新城两岸高楼天际线，让你度过一个难忘的盛世钱塘夜游之旅。是我国古代劳动人民创造的一项伟大工程，是祖先留给我们的珍贵物质和精神财富，是活着的、流动的重要人类遗产。大运河始凿于春秋时期，形成于隋代，发展于唐宋，最终在元代成为沟通海河、黄河、淮河、长江、钱塘江五大水系、纵贯南北的水上交通要道。在两千多年的历史进程中，大运河为我国经济发展、国家统一、社会进步和文化繁荣做出了重要贡献，至今仍在发挥着巨大作用。 ",
+        "freePoiStatus": "UNKNOWN",
+        "id": "140626847",
+        "jumpUrl": "https://router.feizhu.com/multi/webview?url=https%3A%2F%2Frouter.feizhu.com%2Fws%2F2pePsq",
+        "latitude": "30.211689",
+        "listRank": null,
+        "longitude": "120.200852",
+        "mainPic": "https://img.alicdn.com/imgextra/i1/6000000004310/O1CN01Y6od6t1hi1dlyZArp_!!6000000004310-0-fliggyimage.jpg",
+        "name": "钱塘江夜游",
+        "poiLevel": null,
+        "ticketInfo": null
+      },
+      {
+        "address": "浙江省杭州市建德市梅城镇严东关路姚坞码头",
+        "category": "城市观光",
+        "description": "“七里扬帆”长达23公里，奇山异水，天下独绝。历代文人墨客李白、孟浩然、杜牧、刘长卿、范仲淹、陆游、黄公望、唐伯虎等均在此留下传世名作。如今，江面上遍布着：“严陵问古”、“双塔凌云”、“七里扬帆”、“子胥野渡”、“葫芦飞瀑”等景观。游客至此，可领略“人行明镜中，帆浮翠屏间”之唐诗意境。",
+        "freePoiStatus": "NOT_FREE",
+        "id": "202820",
+        "jumpUrl": "https://router.feizhu.com/multi/webview?url=https%3A%2F%2Frouter.feizhu.com%2Fws%2F3u2yS0",
+        "latitude": "29.546438",
+        "listRank": "全国城市观光景点榜第3名",
+        "longitude": "119.544318",
+        "mainPic": "https://img.alicdn.com/tfscom/TB12Q0BV9zqK1RjSZFpSuukSXXa",
+        "name": "七里扬帆",
+        "poiLevel": "4",
+        "ticketInfo": null
+      },
+      {
+        "address": "浙江省杭州市西湖区杨公堤10号花港观鱼内",
+        "category": "城市观光",
+        "description": "去杭州的游客，总少不去西湖，去西湖绝对要坐在游船上，畅游湖光山色，细观绿波岚影，领略一下西子湖“淡妆浓抹总相宜”的美丽动人风貌。游船是我国水上交通工具之一。顾名思义，它主要是为了运载旅客之用。因为各种不同的船形构造和船桨、船帆的使用，都反映了不同时期不同地区船的制造和使用风俗。有湖就有船，联系到西湖游船的历史和习俗，也是颇有趣味的。西湖的名称，最早始于唐代。唐代大诗人白居易在杭州任刺史时，曾浚两湖，筑长堤，开始治理这块美丽的湖泊。那时，西湖还处于初辟阶段，湖面广宽烟波杳渺。",
+        "freePoiStatus": "NOT_FREE",
+        "id": "202777",
+        "jumpUrl": "https://router.feizhu.com/multi/webview?url=https%3A%2F%2Frouter.feizhu.com%2Fws%2F2G406O",
+        "latitude": "30.232564",
+        "listRank": null,
+        "longitude": "120.14245",
+        "mainPic": "https://img.alicdn.com/tfscom/TB1x0JaOFXXXXXKXXXXSutbFXXX",
+        "name": "西湖外事游船",
+        "poiLevel": null,
+        "ticketInfo": {
+          "commissionMoneyYuan": "0.00",
+          "itemId": "603959599440",
+          "price": "¥50",
+          "priceDate": null,
+          "rate": "0",
+          "skuCommissionStruct": {
+            "成人票": {
+              "commissionMoneyYuan": "0.00",
+              "price": "50",
+              "rate": "0"
+            }
+          },
+          "ticketName": "西湖外事游船环湖游（花港观鱼码头） 成人票"
+        }
+      },
+      {
+        "address": "浙江省杭州市滨江区西兴街道长河街道闻涛路与飞虹路交叉口附近",
+        "category": "城市观光",
+        "description": "在晴西子游轮上，可以看到著名的钱塘江大桥。这座具有历史意义的大桥横跨钱塘江，它的钢铁架构在阳光下显得格外坚毅，见证着时代的变迁。还能欣赏到钱塘江的江景。江水浩浩荡荡，不同季节有着不同的风貌。在涨潮时，潮水汹涌澎湃，形成壮观的钱江潮，那排山倒海的气势令人震撼。而在平日里，江水悠悠，两岸的城市风光和自然风光尽收眼底，如葱郁的山峦、江边的现代化建筑等。",
+        "freePoiStatus": "UNKNOWN",
+        "id": "1890",
+        "jumpUrl": "https://router.feizhu.com/multi/webview?url=https%3A%2F%2Frouter.feizhu.com%2Fws%2F3rhyIK",
+        "latitude": "30.229931",
+        "listRank": null,
+        "longitude": "120.224119",
+        "mainPic": "https://img.alicdn.com/tfscom/TB1VQsjfRfH8KJjy1XbSuvLdXXa",
+        "name": "钱塘江游轮",
+        "poiLevel": null,
+        "ticketInfo": null
+      },
+      {
+        "address": "浙江省杭州市西湖区西湖街道龙井路1号杭州西湖风景名胜区",
+        "category": "城市观光",
+        "description": "杨公堤与苏堤大致平行，是西湖三堤中唯一的一条车行道。这条长堤与西湖群山连成一片，是明朝杭州知府杨孟瑛主持修建的，后来因为西湖淤积逐渐形成陆地，近些年为了恢复西湖旧貌，重新疏浚了水域，杨公堤才得以恢复。\n杨公堤的绿化非常不错，沿路还有盖叫天故居、郭庄、杭州花圃、茅家埠等景点，但分布比较分散。堤上的里六桥因为起伏很大，被杭州的车友成为“冲桥”，胆小的骑行者在下坡时总难免尖叫。",
+        "freePoiStatus": "UNKNOWN",
+        "id": "1895",
+        "jumpUrl": "https://router.feizhu.com/multi/webview?url=https%3A%2F%2Frouter.feizhu.com%2Fws%2F0TEl0V",
+        "latitude": "30.232456",
+        "listRank": null,
+        "longitude": "120.13658",
+        "mainPic": "https://img.alicdn.com/tfscom/TB1VbhIqeuSBuNjSsplSuve8pXa",
+        "name": "杭州西湖风景名胜区-杨公堤",
+        "poiLevel": null,
+        "ticketInfo": null
+      },
+      {
+        "address": "浙江省杭州市淳安县近郊千岛湖镇四马巷2号",
+        "category": "城市观光",
+        "description": "走进心灵绿洲——千岛湖 千岛湖豪华休闲游不仅能带你在梅峰岛上纵览群岛风光，还能在里锁住爱情。 现代欧式游船“梦想02号” 古朴典雅的“梦想03/05号” 豪华中式画舫船“千旅之星01/02号” “贺城号” 六艘豪华游船带你解锁的青山绿水，赏尽千岛美景，感受在船上的惬意时光。",
+        "freePoiStatus": "UNKNOWN",
+        "id": "337141",
+        "jumpUrl": "https://router.feizhu.com/multi/webview?url=https%3A%2F%2Frouter.feizhu.com%2Fws%2F4bU9NI",
+        "latitude": "29.603752",
+        "listRank": null,
+        "longitude": "119.031801",
+        "mainPic": "https://img.alicdn.com/tfscom/TB1nFW0eTvI8KJjSspjSuwgjXXa",
+        "name": "千岛湖夜游",
+        "poiLevel": null,
+        "ticketInfo": null
+      },
+      {
+        "address": "浙江省杭州市淳安县千岛湖镇新安大街5-3号(旅游码头)",
+        "category": "城市观光",
+        "description": "“伯爵号”豪华游轮是千岛湖唯一一艘涵盖住宿、餐饮、娱乐等功能的综合性大型游轮，伯爵号游轮船长70米,宽18米,航速15公里/小时,载客量496人。是中国内陆湖第一艘酒店式豪华游轮，伯爵号游轮采用了现代欧式四星级标准精装修并引进了海外酒店式游轮的规范管理技术，集水上游览、餐饮、娱乐、住宿为一体。千岛湖伯爵号游轮全船共有六层甲板,设有各类休闲娱乐餐饮设施,以及大型露天观景舞台，可举办大型庆典活动。千岛湖伯爵号游轮共有客房88间,其中包括总统套房2间,超豪华套房4间,豪华套房8间，可提供一条龙的旅游接待服务。",
+        "freePoiStatus": "NOT_FREE",
+        "id": "37321949",
+        "jumpUrl": "https://router.feizhu.com/multi/webview?url=https%3A%2F%2Frouter.feizhu.com%2Fws%2F3pHE5h",
+        "latitude": "29.604655",
+        "listRank": null,
+        "longitude": "119.034158",
+        "mainPic": "https://img.alicdn.com/imgextra/i3/O1CN011m2s6Di6WOMsHpa_!!0-travel.jpg",
+        "name": "千岛湖伯爵号游轮",
+        "poiLevel": null,
+        "ticketInfo": null
+      },
+      {
+        "address": "浙江省杭州市建德市新安江双江街码头",
+        "category": "城市观光",
+        "description": "乘船赏梦幻夜景，沿江的所有建筑物都灯光闪烁、五彩缤纷，把这座风景旅游小城映照得非常美丽。",
+        "freePoiStatus": "NOT_FREE",
+        "id": "335892",
+        "jumpUrl": "https://router.feizhu.com/multi/webview?url=https%3A%2F%2Frouter.feizhu.com%2Fws%2F4Otxpg",
+        "latitude": "29.49408",
+        "listRank": null,
+        "longitude": "119.301412",
+        "mainPic": "https://img.alicdn.com/tfscom/TB1UDhtb46I8KJjSszfSuuZVXXa",
+        "name": "梦幻新安江",
+        "poiLevel": null,
+        "ticketInfo": {
+          "commissionMoneyYuan": "0.00",
+          "itemId": "1028359410453",
+          "price": "¥78",
+          "priceDate": null,
+          "rate": "0",
+          "skuCommissionStruct": {
+            "成人票": {
+              "commissionMoneyYuan": "0.00",
+              "price": "78",
+              "rate": "0"
+            }
+          },
+          "ticketName": "船票 成人票"
+        }
+      },
+      {
+        "address": "浙江省杭州市淳安县千岛湖镇千岛湖风景区休闲游夜游码头南门旁",
+        "category": "城市观光",
+        "description": "千岛湖，因湖内拥有1078座翠岛而得名。千岛湖景区内碧水呈奇，千岛百姿，自然风光旖旎，并以其自然风光、人文景观、动物野趣、休闲娱乐的丰富多彩而享誉海内外。游艇简介：游艇采用玻璃鋼材料造型美观,运行平稳安全，集音乐KTV、阳光SPA、商务派对、休闲垂钓、国际棋牌于一体，可满足客户的家庭聚会、商务公关、游览等多方面的需要，是您VIP接待、高层会议、顶级宴会、旅游婚纱的理想去处。配备服务及设施：专业驾驶，轮机员、服务员等。\n优待政策\n1.5米（不含）以下儿童、60（含）-69周岁（含）老人、70周岁（含）老人、学生、记者、军官、残疾凭相关证件可购买优惠票。\n以上信息仅供参考，具体信息请以景区当天披露为准。\n预订限制\n梦想号游轮分一层船舱票，二楼船舱票，请按要求选择，如需升舱，费用直接支付给船上工作人员。\n儿童票：游玩当日景区窗口测量身高，如未达优惠票相关标准，需在窗口按照门市价成人票补齐差价。\n特惠票：游玩当日景区窗口检查相关证件换票，老人票需携带身份证日期核实到年月日，如当天忘带证件或者未到达优惠票相关标准，需在窗口按照门市价成人票补齐差价。\n根据游轮班次及船位的限制，如满位会有预订失败，请知晓。\n梦想2号【游览岛屿】：夜游码头—梅峰揽胜—小金山大桥—红叶湾—温馨岛—夜游码头；（小金山大桥、红叶湾、温馨岛等水域游船游览），行程4—5个小时左右；\n接景区通知，根据G20要求，从2016.5.27开始进行游船码头安检，不允许带液体（含瓶装水、化妆水等）、打火机、刀具等物品。请游客提前做好以上物品的妥善保管。相互转告！谢谢！\n温馨提示\n航线固定，严格按照规定的航线行驶，无法更具乘客要求更改航线。请您务必知晓。如果因为游客自身原因延长游览时间而导致游船行程缩减或者其他后果的，由游客自己承担。敬请留意。\n",
+        "freePoiStatus": "UNKNOWN",
+        "id": "140628541",
+        "jumpUrl": "https://router.feizhu.com/multi/webview?url=https%3A%2F%2Frouter.feizhu.com%2Fws%2F1cYexQ",
+        "latitude": "29.603766",
+        "listRank": null,
+        "longitude": "119.031814",
+        "mainPic": "https://img.alicdn.com/imgextra/i4/751279612/O1CN01rjKIRB2KsLaTCWNUd_!!751279612-0-cloudwork.jpg",
+        "name": "千岛湖游船",
+        "poiLevel": null,
+        "ticketInfo": null
+      }
+    ]
+  },
+  "message": "success",
+  "status": 0,
+  "systemMessage": null
+}

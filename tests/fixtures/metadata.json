@@ -1,0 +1,10 @@
+{
+  "city": "杭州",
+  "dates": [
+    "2026-11-07",
+    "2026-11-08"
+  ],
+  "hotel_search_poi": "西湖游船",
+  "retrieved_at": "2026-10-18T13:44:16.113714+00:00",
+  "note": "Raw flyai responses; no fabricated entities or coordinates"
+}

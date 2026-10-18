@@ -7,6 +7,8 @@ import json
 import shutil
 import subprocess
 
+from . import config  # Load project .env before starting the CLI subprocess.
+
 TIMEOUT_S = 60
 
 
@@ -35,8 +37,7 @@ def run(command: str, **params) -> dict:
                 return json.loads(line)
             except json.JSONDecodeError:
                 break
-    err = proc.stderr.decode("utf-8", errors="replace").strip()
-    return {"status": -1, "error": f"flyai {command} returned no JSON: {err[:300]}"}
+    return {"status": -1, "error": f"flyai {command} returned no JSON (exit {proc.returncode})"}
 
 
 def search_hotel(dest_name, poi_name=None, check_in_date=None, check_out_date=None,

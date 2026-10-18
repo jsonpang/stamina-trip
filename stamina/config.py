@@ -25,9 +25,6 @@ def llm_settings() -> tuple[str, str, str]:
     base_url = os.environ.get("LLM_BASE_URL", "")
     model = os.environ.get("LLM_MODEL", "")
     key = os.environ.get("LLM_API_KEY", "")
-    key_file = os.environ.get("LLM_API_KEY_FILE", "")
-    if not key and key_file:
-        key = Path(key_file).read_text(encoding="utf-8").strip()
     missing = [n for n, v in (("LLM_BASE_URL", base_url), ("LLM_MODEL", model), ("LLM_API_KEY", key)) if not v]
     if missing:
         raise RuntimeError(f"missing settings: {', '.join(missing)} (see .env.example)")
