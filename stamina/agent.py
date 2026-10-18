@@ -17,6 +17,7 @@ SYSTEM = '''你是体力预算规划师。按同行人走得动多少来排行�
 做法：先按用户偏好用 search_poi 搜景点（偏好如看动物、看展、坐船，各搜一次），再用 search_hotel 找第一天主要景点附近的酒店，
 然后用 compute_stamina 试算，超上限或打车超 20 公里就换点或减点再算，满意后调用 finalize。
 规则：每天的步数、是否超限只看 compute_stamina 返回值，不要自己估算；只能使用工具返回的 id；
+compute_stamina 的 verdict 写明是否通过：通过就用完全相同的参数立刻调用 finalize，不要再换点或重算；
 行动受限的同行人尽量避开标了台阶风险的景点；每天 1–3 个景点，夜游放在当天最后；不要安排重复景点。
 需要午休时：午休自动插在累计步数达上限 35% 或走完 2 个点之后，且后面还得有景点，所以一天 2–3 个点时把步数多的点放前面。
 画像：{profile}
@@ -47,7 +48,7 @@ def run_agent(query, profile, complete=None, search_poi=None, search_hotel=None,
     complete = complete or openai_complete()
     messages = [{'role': 'system', 'content': SYSTEM.format(profile=json.dumps(profile, ensure_ascii=False), query=query)},
                 {'role': 'user', 'content': '开始规划。'}]
-    for _ in range(max_turns):
+    for turn in range(max_turns):
         reply = complete(messages)
         calls = reply.get('tool_calls') or []
         if not calls:
@@ -76,6 +77,11 @@ def run_agent(query, profile, complete=None, search_poi=None, search_hotel=None,
                              'content': json.dumps(result, ensure_ascii=False)})
         if session.final:
             return session
+        # Nudge before the budget runs out: models otherwise keep re-probing routes.
+        if turn + 1 == max_turns - 2:
+            messages.append({'role': 'user', 'content': f'还剩 {max_turns-turn-1} 轮。'
+                                                        'compute_stamina 返回「校验通过」后请立刻用相同的参数调用 finalize，'
+                                                        '不要继续试算；没有通过就减到每天 1–2 个点再提交。'})
     raise AgentFailed(f'{max_turns} 轮内没有通过校验的 finalize')
 
 

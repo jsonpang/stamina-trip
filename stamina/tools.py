@@ -133,17 +133,10 @@ class Session:
     def bill(self, routes, hotel):
         return [bill_day(date, route, self.profile, hotel) for date, route in zip(self.profile['dates'], routes)]
 
-    def compute(self, days, hotel_id=None):
-        routes, hotel = self.resolve(days, hotel_id)
-        return {'days': [day_view(d) for d in self.bill(routes, hotel)],
-                'hotel_included': hotel is not None}
-
-    def finalize(self, days, hotel_id=None):
-        routes, hotel = self.resolve(days, hotel_id)
-        if not any(routes):
-            raise ToolError('至少安排一个景点')
+    def review(self, billed, routes):
+        """Validation problems of one billed plan; shared by compute and finalize."""
         problems = []
-        for route, day in zip(routes, self.bill(routes, hotel)):
+        for route, day in zip(routes, billed):
             if any('夜游' in p['name'] for p in route[:-1]):
                 problems.append(f"{day['date']} 夜游必须放在当天最后")
             if day['over_cap']:
@@ -151,7 +144,25 @@ class Session:
             if day['noon_rest_missing']:
                 problems.append(f"{day['date']} 排不进午休：午休要在累计步数达上限 35% 或走完 2 个点之后、且后面还有景点，请调整顺序或增减景点")
             if day['taxi_over_budget']:
-                problems.append(f"{day['date']} 打车 {day['taxi_km']} 公里，超过 {DAILY_TAXI_KM_BUDGET:g} 公里")
+                problems.append(f"{day['date']} 打车 {day['taxi_km']} 公里，超过 {DAILY_TAXI_KM_BUDGET:g} 公里；"
+                                "把这天离得远的景点换成彼此更近的（例如都在西湖边），或减少景点数")
+        return problems
+
+    def compute(self, days, hotel_id=None):
+        routes, hotel = self.resolve(days, hotel_id)
+        billed = self.bill(routes, hotel)
+        # State the verdict in the result: left implicit, the model re-derives the same
+        # conclusion over several turns and burns the turn budget before finalizing.
+        problems = self.review(billed, routes)
+        return {'days': [day_view(d) for d in billed], 'hotel_included': hotel is not None,
+                'verdict': '校验通过，请用完全相同的 days 和 hotel_id 调用 finalize 提交。' if not problems
+                           else '未通过校验：' + '；'.join(problems)}
+
+    def finalize(self, days, hotel_id=None):
+        routes, hotel = self.resolve(days, hotel_id)
+        if not any(routes):
+            raise ToolError('至少安排一个景点')
+        problems = self.review(self.bill(routes, hotel), routes)
         if problems:
             raise ToolError('未通过校验：' + '；'.join(problems))
         self.final = (routes, hotel)

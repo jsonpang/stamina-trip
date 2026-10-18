@@ -145,3 +145,41 @@ def test_ordinary_skips_sub_areas():
     pois = [dict(name='杭州动物园'), dict(name='杭州动物园-虎山'), dict(name='西湖游船'),
             dict(name='西湖游船涌金池码头'), dict(name='西湖外事游船'), dict(name='杭州博物馆')]
     assert [p['name'] for p in agent.main_pois(pois)] == ['杭州动物园', '西湖游船', '杭州博物馆']
+
+
+def test_compute_verdict_tells_the_model_to_finalize(profile, searches):
+    """compute_stamina states the verdict; without it the model re-probes and never finalizes."""
+    search_poi, search_hotel, _ = searches
+    from stamina.tools import Session
+    session = Session(profile, search_poi, search_hotel)
+    session.search_poi(category='博物馆')
+    session.search_hotel(poi_name='杭州博物馆')
+    passing = session.compute(days=GOOD_DAYS)
+    assert passing['verdict'].startswith('校验通过')
+    assert 'finalize' in passing['verdict']
+
+
+def test_compute_verdict_explains_how_to_fix_taxi_overage(profile, searches):
+    search_poi, search_hotel, _ = searches
+    from stamina.tools import Session
+    session = Session(profile, search_poi, search_hotel)
+    session.search_poi(category='博物馆')
+    session.search_hotel(poi_name='杭州博物馆')
+    profile['daily_step_cap'] = 20000  # 只让打车里程成为问题
+    failing = session.compute(days=[['2398', '2267'], ['14761420']])
+    assert '未通过校验' in failing['verdict'] and '打车' in failing['verdict']
+    assert '换成彼此更近的' in failing['verdict']
+
+
+def test_turn_budget_nudge_is_sent(profile, searches, monkeypatch):
+    """A near-final nudge asks the model to submit instead of probing more routes."""
+    search_poi, search_hotel, _ = searches
+    monkeypatch.setattr(agent, 'MAX_TURNS', 5)
+    probes = [[call('search_poi', i, category='博物馆')] for i in range(20)]
+    complete = scripted(*probes)
+    plan = agent.agent_plan('q', profile, complete, search_poi, search_hotel)
+    assert plan['mode'] == 'fallback'
+    # The loop warns the model before the budget runs out instead of silently expiring.
+    nudges = [m['content'] for seen in complete.seen for m in seen
+              if m['role'] == 'user' and 'finalize' in m['content'] and '开始规划' not in m['content']]
+    assert nudges and '还剩' in nudges[0]
