@@ -1663,3 +1663,5 @@ html, body {
 .hotel-compare-table td.over { color: #e02020; }
 .hotel-compare-star { margin-left: 6px; font-size: 11px; color: #999; font-weight: 400; }
 .hotel-compare-note { font-size: 12px; color: #999; margin: 8px 0 0; }
+
+.step-meter-people { font-size: 12px; color: #888; margin-top: 6px; line-height: 1.6; }

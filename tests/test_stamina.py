@@ -12,8 +12,8 @@ def test_distance_and_stride(profile, raw_pois):
     expected = 6371000*math.acos(math.sin(lat1)*math.sin(lat2)+math.cos(lat1)*math.cos(lat2)*math.cos(dlon))*1.3
     assert distance_m(a,b) == pytest.approx(expected,abs=0.01)
     assert distance_m(a,a) == 0
-    assert stride_m(profile['travelers']) == 0.45
-    assert walking_steps(450,profile['travelers']) == 1000
+    assert stride_m(profile['travelers']) == 0.55  # 按膝盖不好的长辈计
+    assert walking_steps(550,profile['travelers']) == 1000
 
 
 def test_taxi_threshold(profile, raw_pois):
@@ -57,3 +57,15 @@ def test_noon_hotel_or_local(profile, raw_pois, raw_hotels):
     assert any('就近休息' in r['name'] for r in day['bill'])
     profile['need_noon_rest']=False
     assert not any(r['kind']=='rest' for r in bill_day(profile['dates'][0],[poi,after],profile,close)['bill'])
+
+
+def test_per_person_steps(profile):
+    a = dict(name='甲', latitude='30.25', longitude='120.16', category='博物馆')
+    b = dict(name='乙', latitude='30.252', longitude='120.162', category='博物馆')
+    day = bill_day(profile['dates'][0], [a, b], profile)
+    people = day['per_person']
+    ref = [p for p in people if p['reference']]
+    assert len(ref) == 1 and ref[0]['mobility'] == 'limited'
+    assert abs(ref[0]['steps'] - day['total_steps']) <= len(day['bill'])  # 只差逐段取整
+    child = next(p for p in people if p['age'] == 6)
+    assert child['steps'] > ref[0]['steps']  # 孩子步子小，同样路程步数更多

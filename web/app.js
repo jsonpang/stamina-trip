@@ -654,6 +654,17 @@
       meterFoot.textContent = `未超过上限，剩余 ${formatNumber(remaining)} 步 (上限 ${formatNumber(cap)} 步)`;
     }
     meterBox.appendChild(meterFoot);
+
+    // 每人步数：只用 per_person 字段（年龄、行动、步数、是否为计步参照人）
+    if (Array.isArray(dayData.per_person) && dayData.per_person.length > 1) {
+      const people = document.createElement('div');
+      people.className = 'step-meter-people';
+      const ref = dayData.per_person.find(p => p.reference);
+      const label = p => `${p.age}岁${p.mobility === 'limited' ? '（行动受限）' : ''}`;
+      people.textContent = (ref ? `步数按 ${label(ref)} 计；` : '') + '每人约：' +
+        dayData.per_person.map(p => `${label(p)} ${formatNumber(p.steps)} 步`).join(' · ');
+      meterBox.appendChild(people);
+    }
     col.appendChild(meterBox);
 
     // 3. 景点游览动线

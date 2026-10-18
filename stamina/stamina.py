@@ -28,9 +28,29 @@ def distance_m(a, b):
     return 6371000 * 2 * math.asin(math.sqrt(min(1, max(0, h)))) * DETOUR_FACTOR
 
 
+def person_stride(person):
+    return 0.55 if person['mobility'] == 'limited' or person['age'] >= 65 else 0.45 if person['age'] <= 8 else 0.7
+
+
+def person_default_cap(person):
+    return 6000 if person['mobility'] == 'limited' or person['age'] >= 65 else 7000 if person['age'] <= 8 else 12000
+
+
+def reference_traveler(travelers):
+    """每日步数上限保护的那个人：默认上限最低者，同档优先行动受限者。步数按此人步长计。"""
+    return min(travelers, key=lambda p: (person_default_cap(p), p['mobility'] != 'limited', -p['age']))
+
+
 def stride_m(travelers):
-    return min(0.55 if p['mobility'] == 'limited' or p['age'] >= 65
-               else 0.45 if p['age'] <= 8 else 0.7 for p in travelers)
+    return person_stride(reference_traveler(travelers))
+
+
+def per_person_steps(rows, travelers):
+    """每个同行人各自约走多少步：同样的步行米数除以各自步长（估算）。"""
+    meters = sum(r['walking_m'] for r in rows)
+    reference = reference_traveler(travelers)
+    return [dict(age=p['age'], mobility=p['mobility'], stride_m=person_stride(p),
+                 steps=round(meters / person_stride(p)), reference=p is reference) for p in travelers]
 
 
 def walking_steps(meters, travelers):
@@ -138,6 +158,7 @@ def _close_day(date, route, rows, profile, ordinary):
         row['over_cap'] = total > cap
     taxi_km = day_taxi_km(rows)
     return dict(date=date, pois=list(route), bill=rows, total_steps=total, cap=cap,
+                per_person=per_person_steps(rows, profile['travelers']),
                 over_cap=total > cap, taxi_km=taxi_km,
                 taxi_over_budget=not ordinary and taxi_km > DAILY_TAXI_KM_BUDGET,
                 long_rides=sum(bool(r.get('long_ride')) for r in rows),
