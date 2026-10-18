@@ -372,6 +372,7 @@
 
     // 4. 渲染酒店推荐
     renderHotelCard(data.hotel, data.hotel_stay);
+    renderHotelCompare(data.hotel_compare, data.stamina);
 
     // 5. 渲染智能体决策过程 (tool_trace 及 fallback 提示)
     renderToolTrace(data);
@@ -1077,6 +1078,54 @@
    * 每项字段是 {tool, args, n}：显示工具名 tool、参数 args 的简要键值、结果条数 n。不要自己写每一步的解说文字。
    * mode 为 "fallback" 时显示一行灰色提示「本次使用确定性规划兜底」并附原因字段（若有）。
    */
+  /**
+   * 酒店对比：只用 hotel_compare 字段（名称、报价、直线距离、每天步数、是否超限）。
+   */
+  function renderHotelCompare(rows, staminaDays) {
+    const box = document.getElementById('hotel-compare');
+    const table = document.getElementById('hotel-compare-table');
+    if (!box || !table) return;
+    table.innerHTML = '';
+    if (!Array.isArray(rows) || rows.length < 2) {
+      box.classList.add('hidden');
+      return;
+    }
+    const dates = (rows[0].days || []).map(d => d.date);
+    const head = document.createElement('tr');
+    ['酒店', '每晚报价', '距首日景点（直线）'].concat(dates.map(d => `${d} 步数（估算）`)).forEach(t => {
+      const th = document.createElement('th');
+      th.textContent = t;
+      head.appendChild(th);
+    });
+    table.appendChild(head);
+    rows.forEach(h => {
+      const tr = document.createElement('tr');
+      if (h.chosen) tr.className = 'chosen';
+      const name = document.createElement('td');
+      name.textContent = h.name + (h.chosen ? '（已选）' : '');
+      if (h.star) {
+        const star = document.createElement('span');
+        star.className = 'hotel-compare-star';
+        star.textContent = h.star;
+        name.appendChild(star);
+      }
+      tr.appendChild(name);
+      [h.price || '', `${Number(h.distance_m).toLocaleString()} 米`].forEach(t => {
+        const td = document.createElement('td');
+        td.textContent = t;
+        tr.appendChild(td);
+      });
+      (h.days || []).forEach(d => {
+        const td = document.createElement('td');
+        td.textContent = Number(d.total_steps).toLocaleString() + (d.over_cap ? '（超限）' : '');
+        if (d.over_cap) td.className = 'over';
+        tr.appendChild(td);
+      });
+      table.appendChild(tr);
+    });
+    box.classList.remove('hidden');
+  }
+
   function renderToolTrace(data) {
     const trace = data.tool_trace;
     const isFallback = data.mode === 'fallback';

@@ -109,3 +109,7 @@ def test_agent_plans_park_days(profile, park_search):
     assert compare['乐园自营酒店']['distance_m'] < compare['园外民宿']['distance_m']
     assert {'key_words': '上海迪士尼乐园酒店'}.items() <= next(c for c in search_poi.calls if isinstance(c, dict) and 'key_words' in c).items()
     assert any('直通卡' in w for w in plan['warnings'])
+
+
+def test_parade_is_not_seated():
+    assert park_item_kind(item('x', '花车巡游', 31.14, 121.66)) != 'show'
