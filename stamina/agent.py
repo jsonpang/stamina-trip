@@ -77,6 +77,12 @@ def run_agent(query, profile, complete=None, search_poi=None, search_hotel=None,
     raise AgentFailed(f'{max_turns} 轮内没有通过校验的 finalize')
 
 
+def main_pois(pois):
+    """Drop sub-areas such as「杭州动物园-虎山」when the parent POI is also a candidate."""
+    names = {p['name'] for p in pois}
+    return [p for p in pois if not any(p['name'].startswith(n + '-') for n in names)]
+
+
 def plan_from_session(session):
     profile = session.profile
     routes, hotel = session.final
@@ -84,7 +90,7 @@ def plan_from_session(session):
     if hotel:
         # Report distance to the first non-empty day's centroid, as the deterministic planner does.
         hotel = choose_hotel([hotel], next(r for r in routes if r), profile['budget_per_night'])
-    candidates = sorted(session.pois.values(), key=lambda p: p['source_order'])
+    candidates = main_pois(sorted(session.pois.values(), key=lambda p: p['source_order']))
     plan = dict(profile=profile, ordinary=ordinary_days(profile, candidates, hotel), stamina=active, hotel=hotel,
                 warnings=plan_warnings(hotel, active), removed_claims=[], explanation='', system_messages=[])
     if hotel and session.hotel_query:

@@ -8,7 +8,7 @@ import datetime as dt
 
 from . import flyai
 from .planner import items_from, usable_coordinates, price_value
-from .stamina import bill_day, poi_steps, stair_risk, DAILY_TAXI_KM_BUDGET
+from .stamina import bill_day, poi_steps, stair_risk, CATEGORY_STEPS, DAILY_TAXI_KM_BUDGET
 
 DAYS_SCHEMA = {"type": "array", "description": "每天一个景点 id 列表，按游览顺序；天数必须等于行程天数",
                "items": {"type": "array", "items": {"type": "string"}}}
@@ -19,7 +19,7 @@ SPECS = [
         "description": "用飞猪实时数据搜索目的地城市的景点。按同行人兴趣选关键词或分类，例如想看动物就搜「动物园」。",
         "parameters": {"type": "object", "properties": {
             "keyword": {"type": "string"},
-            "category": {"type": "string", "description": "如 动物园、博物馆、城市观光、园林花园"},
+            "category": {"type": "string", "enum": list(CATEGORY_STEPS)},
         }}}},
     {"type": "function", "function": {
         "name": "search_hotel",
@@ -70,6 +70,9 @@ class Session:
         raise ToolError(f'没有这个工具：{name}')
 
     def search_poi(self, keyword=None, category=None):
+        if category and category not in CATEGORY_STEPS:
+            # flyai rejects free-text categories such as「看动物」; search them as a keyword instead.
+            keyword, category = keyword or category, None
         result = self.search_poi_fn(self.profile['city'], keyword=keyword or None, category=category or None)
         self.raw_results.append(result)
         items = []

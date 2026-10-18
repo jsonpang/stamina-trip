@@ -121,3 +121,17 @@ def test_taxi_over_budget_finalize_rejected(profile, searches, raw_pois):
     turns = happy_turns(dict(days=far_day, hotel_id=HOTEL)) + ([call('finalize', 6, days=GOOD_DAYS, hotel_id=HOTEL)],)
     plan = agent.agent_plan('q', profile, scripted(*turns), search_poi, search_hotel)
     assert '打车' in plan['tool_trace'][-2]['error']
+
+
+def test_free_text_category_becomes_keyword(profile, searches):
+    search_poi, search_hotel, calls = searches
+    from stamina.tools import Session
+    Session(profile, search_poi, search_hotel).search_poi(category='看动物')
+    Session(profile, search_poi, search_hotel).search_poi(category='动物园', keyword='杭州')
+    assert calls[0] == ('poi', '杭州', '看动物', None)
+    assert calls[1] == ('poi', '杭州', '杭州', '动物园')
+
+
+def test_ordinary_skips_sub_areas():
+    pois = [dict(name='杭州动物园'), dict(name='杭州动物园-虎山'), dict(name='西湖游船')]
+    assert [p['name'] for p in agent.main_pois(pois)] == ['杭州动物园', '西湖游船']
